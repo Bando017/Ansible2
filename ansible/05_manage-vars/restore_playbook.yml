@@ -1,0 +1,39 @@
+---
+- name: Restore the playbook.yml
+  hosts: all
+  gather_facts: true
+  tasks:
+    - name: 방화벽 포트 닫기
+      firewalld:
+        service: "{{ item }}"
+        permanent: yes
+        immediate: yes
+        state: disabled
+      with_items:
+        - http
+        - https
+ 
+    - name: 서비스 내리기
+      service:
+        name: "{{ item }}"
+        state: stopped
+      with_items:
+        - firewalld
+        - httpd
+  
+    - name: 웹서비스 설정 삭제
+      file:
+        path: /var/www/html/index.html
+        state: absent
+   
+    - name: 패키지 삭제
+      yum:
+        name:
+          - httpd
+          - firewalld
+        state: absent
+    
+    - name: 사용자 정의 팩트 삭제
+      file:
+        path: /etc/ansible/facts.d
+        state: absent

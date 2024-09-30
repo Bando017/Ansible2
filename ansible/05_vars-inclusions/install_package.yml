@@ -1,0 +1,5 @@
+---
+- name: Installs {{ packages.web_pkg }}
+  ansible.builtin.dnf:
+    name: "{{ packages.web_pkg }}"
+    state: latest

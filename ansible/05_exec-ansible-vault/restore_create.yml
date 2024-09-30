@@ -1,0 +1,13 @@
+---
+- name: Remove user accounts from all our servers
+  hosts: devservers
+  remote_user: devops
+  become: true
+  vars_files:
+    - vars/secret.yml
+  tasks:
+    - name: Remove users from secret.yml
+      user:
+        name: "{{ item.name }}"
+        state: absent
+      loop: "{{ newusers }}"

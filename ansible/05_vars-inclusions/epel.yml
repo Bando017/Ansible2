@@ -1,0 +1,9 @@
+---
+- name: Install EPEL Release
+  hosts: all
+  become: yes 
+  tasks:
+    - name: Install EPEL release package
+      yum:
+        name: epel-release
+        state: present

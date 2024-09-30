@@ -1,0 +1,9 @@
+---
+- hosts: all
+  tasks:
+    - name: 패키지 삭제
+      yum:
+        name: 사용자 추가 동작
+        
+        state: absent
+        remove: true

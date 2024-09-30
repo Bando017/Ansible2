@@ -1,0 +1,27 @@
+---
+- name: restore intranet.yml
+  hosts: web1.example.com
+  gather_facts: no
+  tasks:
+    - name: httpd service disable
+      service: 
+        name: httpd
+        enabled: false
+        state: stopped
+
+    - name: remove /var/www/html/index.html
+      file:
+        path: /var/www/html/index.html
+        state: absent
+
+    - name: remove httpd package
+      yum:
+        name: httpd
+        state: absent
+
+    - name: close port for http with firewalld 
+      firewalld:
+        service: http
+        permanent: yes
+        immediate: yes
+        state: disabled

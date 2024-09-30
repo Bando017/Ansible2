@@ -1,0 +1,72 @@
+---
+- name: 0) 잡 제어
+  hosts: webservers
+  gather_facts: true
+  vars_files: 
+    - vars.yml
+  tasks: 
+  # 1) 정보 수집 &  필수 사양 점검
+  # - 배포판이 CentOS가 아니면 실패 메세지 출력
+  # - 메모리가 265mb 보다 작으면 
+  # 2) 패키지 설치 - httpdd, mod_ssl , firewalld
+  # 3) 서비스 기동 - httpd, firewalld
+  # 4) 웹 서버 HTTPS 설정 - notify ~ handlers
+  # * /etc/pki/tls/certs/localhost.crt
+  # * /etc/pki/tls/private/localhost.key
+  # * /var/www/html/index.html
+  # 5) 방화벽 포트 열기 - http, https
+  # 6) handlers
+    - name: 시스템 사양 점검
+      fail:
+        msg: " 이 서버({{inventory_hostname}})는 최소 사양"
+      when: >
+        ansible_memtotal_mb < min_ram_mb or
+        ansible_distribution != "CentOS"
+
+    - name: 패키지 설치
+      ansible.builtin.dnf:
+        name: "{{ packages }}"
+        state: latest
+
+    - name: 서비스 기동
+      ansible.builtin.service:
+        name: "{{ item }}"
+        state: started
+        enabled: yes
+      loop: "{{ services }}"
+
+    - name: 4)웹 서버 HTTPS 설정
+      block:
+        - name:  파일 배포
+          file:
+            path: "{{ ssl_cert_dir }}"
+            state: directory
+
+        - name: 4-1)설정 파일 배포
+          copy:
+            src: "{{ item.src }}"
+            dest: "{{ item.dest }}"
+          loop: "{{ web_config_files }}"
+          notify: restart web 
+
+      rescue:
+        - name: 4-2) 설정 파일 배포 에러 메세지 출력
+          debug:
+            msg: "하나 이상의 설정 파일 배포에 문제가 발생함"
+              
+
+    - name: 방화벽 포트 등록
+      ansible.posix.firewalld:
+        service: "{{ item }}"
+        immediate: true
+        permanent: true
+        state: enabled
+      loop:
+        - http
+        - https
+
+  handlers:
+    - name: restart web
+      ansible.builtin.service:
+        name: "{{ web_service }}"
+        state: restarted
